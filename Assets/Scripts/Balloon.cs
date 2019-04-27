@@ -9,8 +9,8 @@ public class Balloon : MonoBehaviour
 
     public float m_speed;
     public float m_existTime;
-    public float m_minTime = 2.0f;
-    public float m_maxTime = 4.0f;
+    public float m_minTime = 0.2f;
+    public float m_maxTime = 1.2f;
 
     public Vector3 m_constantBias = new Vector3(0,20,0);
     public float m_originalDist;
@@ -18,10 +18,10 @@ public class Balloon : MonoBehaviour
     
     public double m_boomP;
     public float m_additionalBoomP = 0;
+    public float m_degree;
 
     public delegate void VoidDelegate(Balloon balloon); // 创建一个委托类型，接受Balloon类型
     public VoidDelegate destroyNormally; // 声明一个委托，之后可以让他实例化
-    public VoidDelegate destroyAccidently; 
 
     private SpriteRenderer m_spriteRenderer; // 用于更改透明度
     public Color m_color;
@@ -53,13 +53,14 @@ public class Balloon : MonoBehaviour
     }
 
     // 静态方法，通过引用prefab将他实例化创建GameObject，便于在点击打气筒时创建实例
-    public static Balloon Create(Vector3 pos, Vector3 s,Color c)
+    public static Balloon Create(Vector3 pos, Vector3 scale,Color color, float degree)
     {
         GameObject prefab = Resources.Load<GameObject>("Prefabs/balloon");
         GameObject balloonSprite = (GameObject)Instantiate(prefab,pos,Quaternion.identity); // 创建实例
         Balloon balloon = balloonSprite.AddComponent<Balloon>();
-        balloon.transform.localScale = s;
-        balloon.GetComponent<SpriteRenderer>().color = c;
+        balloon.transform.localScale = scale;
+        balloon.m_degree = degree;
+        balloon.GetComponent<SpriteRenderer>().color = color;
         balloon.isBlowing = true;
         return balloon;
     }
@@ -97,23 +98,26 @@ public class Balloon : MonoBehaviour
         if (Vector3.Distance(pos, m_targetPosition) < 0.1f)
         {
             isDestroyed = true;
-            Destroy(this.gameObject);
             destroyNormally(this);
+            Destroy(this.gameObject);
         }
     }
 
     // 爆炸的概率
     private void boomProbability()
     {
-        m_boomP = System.Math.Pow(this.transform.localScale.magnitude, 2)/10000 + m_additionalBoomP;
+        m_boomP = System.Math.Pow(this.transform.localScale.magnitude, 2)/m_degree + m_additionalBoomP;
         if (Random.value<m_boomP) { // 概率性爆炸
             GameObject prefab = Resources.Load<GameObject>("Prefabs/boom");
             GameObject boom = (GameObject)Instantiate(prefab, this.transform.position, this.transform.rotation);
             Destroy(boom, 1.0f);
             isDestroyed = true;
-            Debug.Log(isDestroyed);
+            AudioClip clip = (AudioClip)Resources.Load("Audio/boom", typeof(AudioClip));
+            AudioSource audioSource = GameObject.Find("Main Camera").GetComponent<AudioSource>();
+            if (Menu.musicOnOff) {
+                audioSource.Play();
+            }
             Destroy(this.gameObject);
-            destroyAccidently(this);
         }
     }
 }

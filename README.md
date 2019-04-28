@@ -1,6 +1,4 @@
 # Balloon
-杨培灏 516021910233
-
 A mini game powered by Unity
 
 Directory Structure:

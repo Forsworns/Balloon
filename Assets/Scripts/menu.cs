@@ -10,7 +10,7 @@ public class Menu : MonoBehaviour
     private const float MEDIUM = 1000;
     private const float HARD = 100;
 
-    private const float TIME_LENGTH = 10;
+    private const float TIME_LENGTH = 30;
 
     public static bool m_isPaused;
 
@@ -45,6 +45,7 @@ public class Menu : MonoBehaviour
     public List<int> scoreList;
     GameObject recordPrefab;
     const int RANK_LENGTH = 8;
+    const string FILE_NAME = "rank.txt";
 
     // Start is called before the first frame update
     void Start()
@@ -71,10 +72,11 @@ public class Menu : MonoBehaviour
         m_timeoutPanel = this.transform.Find("timerBase").Find("timeoutPanel").gameObject;
 
         // rank
+        CreateFile(Application.persistentDataPath, FILE_NAME);
         m_rankPanel = this.transform.Find("rankPanel").gameObject;
         m_rankInfo = m_rankPanel.transform.Find("rankInfo").gameObject;
         scoreList = new List<int>();
-        StreamReader sr = new StreamReader(Application.dataPath + "/Resources/rank.txt");
+        StreamReader sr = new StreamReader(Application.persistentDataPath + "//" + FILE_NAME);
         string nextLine;
         while ((nextLine = sr.ReadLine()) != null) {
             scoreList.Add(int.Parse(nextLine));
@@ -92,10 +94,11 @@ public class Menu : MonoBehaviour
         {
             m_timeoutPanel.transform.Find("timeInfoScore").GetComponent<Text>().text = m_score.GetComponent<Text>().text;
             m_timeoutPanel.SetActive(true);
+            Time.timeScale = 0.0f;
             scoreList.Add(Character.m_score);
             // sort and store it
             scoreList.Sort((x,y)=>-x.CompareTo(y));
-            StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/rank.txt");
+            StreamWriter sw = new StreamWriter(Application.persistentDataPath + "//" + FILE_NAME);
             if (scoreList.Count > RANK_LENGTH)
             {
                 for (int i = RANK_LENGTH; i <= scoreList.Count; i++)
@@ -114,11 +117,31 @@ public class Menu : MonoBehaviour
         }
     }
 
+    void DeleteFile(string path, string name)
+    {
+        File.Delete(path + "//" + name);
+    }
+
+    void CreateFile(string path, string name)
+    {      //文件流信息      
+        StreamWriter sw;
+        FileInfo t = new FileInfo(path+"//"+ name);
+        if (!t.Exists)
+        {               
+            sw = t.CreateText();
+            sw.Close();
+            sw.Dispose();
+        }         
+        
+    }
+        
+
     public void timeout()
     {
         m_timeoutPanel.SetActive(false);
         m_timeNow = 0;
         m_score.GetComponent<Text>().text = "0";
+        Time.timeScale = 1.0f;
         Character.m_score = 0;
     }
 
@@ -148,7 +171,7 @@ public class Menu : MonoBehaviour
         musicOnOff = !musicOnOff;
         m_music.SetActive(musicOnOff);
         m_musicOff.SetActive(!musicOnOff);
-        m_camera.GetComponents<AudioSource>()[1].mute = musicOnOff;
+        m_camera.GetComponents<AudioSource>()[1].mute = !musicOnOff;
     }
 
     public void help() {
@@ -212,6 +235,11 @@ public class Menu : MonoBehaviour
     {
         m_rankPanel.SetActive(false);
         m_menu.SetActive(true);
+        int childCount = m_rankInfo.transform.childCount;
+        for (int i = 0; i < childCount; i++)
+        {
+            DestroyImmediate(m_rankInfo.transform.GetChild(0).gameObject);
+        }
     }
 
     public void easy() {
